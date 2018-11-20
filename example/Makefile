@@ -19,8 +19,9 @@ ifeq ($(OS),Windows_NT)
 endif
 
 objs = blzpack.o parg.o brieflz.o depack.o depacks.o
-
+objs2 = blzpack.o blzpack_lib.o parg.o brieflz.o depack.o depacks.o
 target = blzpack
+target2 = blzpack_lib
 
 all: $(target)
 
@@ -33,10 +34,14 @@ all: $(target)
 $(target): $(objs)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
+$(target2): $(objs2)
+	gcc -shared -o blzpack_lib.so $(objs2)
+
 clean:
 	$(RM) $(objs) $(target)
 
 blzpack.o: ../include/brieflz.h parg.h
+blzpack_lib.o: ../include/brieflz.h parg.h
 parg.o: parg.h
 brieflz.o: ../include/brieflz.h
 depack.o: ../include/brieflz.h
