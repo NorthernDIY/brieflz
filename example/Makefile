@@ -19,7 +19,7 @@ ifeq ($(OS),Windows_NT)
 endif
 
 objs = blzpack.o parg.o brieflz.o depack.o depacks.o
-objs2 = blzpack.o blzpack_lib.o parg.o brieflz.o depack.o depacks.o
+objs2 =  parg.o brieflz.o depack.o depacks.o
 target = blzpack
 target2 = blzpack_lib
 
@@ -39,6 +39,7 @@ $(target2): $(objs2)
 
 clean:
 	$(RM) $(objs) $(target)
+	$(RM) $(objs2) $(target2).so
 
 blzpack.o: ../include/brieflz.h parg.h
 blzpack_lib.o: ../include/brieflz.h parg.h
