@@ -1,12 +1,10 @@
 from ctypes import *
 import binascii
-from collections import namedtuple
 import zlib
 import struct
 
 brieflz = cdll.LoadLibrary('./blzpack_lib.so')
 
-hdr = namedtuple("Header", "magic level packedsize crc depackedsize")
 
 DEFAULT_BLOCK_SIZE = 1024 * 1024
 #MAX_BLOCK_SIZE = (0xFFFFFFFFUL - 0xFFFFFFFFUL / 9UL - 64UL)
@@ -23,7 +21,7 @@ def compress_data(data, blocksize, level):
 		retval = brieflz.blz_pack_level(byref(buf), byref(packed), cb, byref(workmem), level)
 		if retval > 0:
 			temp = packed.raw[:retval]
-			tempret = struct.pack(">IIIII", 1651276314, level, len(temp), zlib.crc32(temp) % (1<<32), len(buf)) + temp
+                        tempret = struct.pack(">IIIIII", 1651276314, level, len(temp), zlib.crc32(temp) % (1<<32), len(buf), zlib.crc32(data[:blocksize])%(1<<32)) + temp
 			compressed_data += tempret
 		else:
 			print("Compression Error")
@@ -31,24 +29,25 @@ def compress_data(data, blocksize, level):
 		data = data[blocksize:]
 	return compressed_data
 		
-def decompress_data(data, blocksize, level):
+def decompress_data(data, blocksize=DEFAULT_BLOCK_SIZE, level=1):
 	decompressed_data = ""
 	max_packed_size = brieflz.blz_max_packed_size(blocksize);
 	
-	(magic,level,packedsize,crc,hdr_depackedsize) = struct.unpack_from('>IIIII', data)
-	data = data[20:]
+	(magic,level,packedsize,crc,hdr_depackedsize,crc2) = struct.unpack_from('>IIIIII', data)
+	data = data[24:]
 	while magic == 0x626C7A1A and len(data) > 0:
 		compressed_data = create_string_buffer(data[:packedsize])
 		workdata = create_string_buffer(blocksize)
 		depackedsize = brieflz.blz_depack(byref(compressed_data), byref(workdata), c_int(hdr_depackedsize))
 		if depackedsize != hdr_depackedsize:
 			print("Decompression error")
+                        print("DepackedSize: "+str(depackedsize) + "\nHdrVal: "+str(hdr_depackedsize))
 			return None
 		decompressed_data += workdata.raw[:depackedsize]
 		data = data[packedsize:]
 		if len(data) > 0:
-			(magic,level,packedsize,crc,hdr_depackedsize) = struct.unpack_from('>IIIII', data)
-			data = data[20:]
+			(magic,level,packedsize,crc,hdr_depackedsize,crc2) = struct.unpack_from('>IIIIII', data)
+			data = data[24:]
 		else:
 			break
 	return decompressed_data
@@ -69,4 +68,5 @@ def main():
 			print(retval)
 
 
-main()	
+if __name__ == "__main__":
+    main()
